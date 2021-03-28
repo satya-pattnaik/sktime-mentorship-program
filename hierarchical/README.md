@@ -55,11 +55,54 @@ where **S** is summation matrix and *$\hat{y}$* are the set of base forecasts. T
 [More Reading](https://otexts.com/fpp2/reconciliation.html)
 
 
-## API Design(Initial Version)
+## API Design-Example Usage(To be Modified based on feedback)
+**Load Time Series**
+
 ```
-base_forecasts = ['CA_1','CA_2','TX_1','TX_2'] 
-reconciled_forecasts = reconcile(base_forecasts,method='bu')
+ts = load_data()
+ts
 ```
+![time_series_data](e_prop_1.png)<br>
+
+**Aggregate Data**(For each state i.e CA and TX)
+```
+ts["CA"] = ts["CA_1"] + ts["CA_2"]
+ts["TX"] = ts["TX_1"] + ts["TX_2"]
+ts
+```
+![time_series_data_agg](e_prop_2.png)<br>
+
+**Create a Placeholder DataFrame for Forecasts**
+```
+forecasts = pd.DataFrame(columns=["CA_1","CA_2","TX_1","TX_2"],
+                         index=["May 2017","Jun 2017","Jul 2017","Aug 2017"])
+forecasts
+```
+**Use Sktime Forecasters for Base Forecasts**
+```
+from sktime.forecasting.all import *
+
+for i in range(4):
+    fh = ForecastingHorizon(forecasts.index, is_relative=False)
+    forecaster = AutoARIMA()
+    forecaster.fit(ts[:,i])
+    forecasts.iloc[:,i] = forecaster.predict(fh) 
+
+print(forecasts)
+```
+
+![forecasts](e_prop_3.png)<br>
+
+**Hierarchical Forecast Design Sketch**
+(This will generate the coherent forecasts across the hierarchy)
+
+```
+hierarchical_reconciler = HierarchicalReconcile(method="ols")
+hierarchical_reconciler.fit(ts)
+coherent_forecasts = hierarchical_reconciler.predict(forecasts)
+print(coherent_forecasts)
+```
+![coherent_forecasts](e_prop_4.png)<br>
 
 ## References
 1. https://otexts.com/fpp2/hierarchical.html
